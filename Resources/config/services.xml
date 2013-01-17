@@ -9,6 +9,20 @@
   </parameters>
 
   <services>
+    
+    <!-- Pdf manager -->
+    <service id="imag_files.pdf" class="%imag_files.pdf.class%">
+      <argument type="service" id="templating" />
+      <argument type="service" id="knp_snappy.pdf" />
+      <!-- Logger -->
+      <argument type="service" id="logger" />
+      <tag name="monolog.logger" channel="files_pdf" />
+    </service>
 
+    <service id="imag_files.zip" class="%imag_files.zip.class%">
+      <!-- Logger -->
+      <argument type="service" id="logger" />
+      <tag name="monolog.logger" channel="files_zip" />
+    </service>
   </services>
 </container>
