@@ -5,7 +5,8 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
   <parameters>
-
+    <parameter key="imag_files.pdf.class">IMAG\FilesBundle\Manager\PdfManager</parameter>
+    <parameter key="imag_files.zip.class">IMAG\FilesBundle\Manager\ZipManager</parameter>
   </parameters>
 
   <services>
