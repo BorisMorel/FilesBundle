@@ -11,7 +11,8 @@ class PdfManager
         $snappy,
         $logger,
         $template,
-        $pdfFilePath
+        $pdfFilePath,
+        $pdfPrefix = 'file'
         ;
 
     public function __construct(\Symfony\Bundle\TwigBundle\TwigEngine $templating,
@@ -25,10 +26,11 @@ class PdfManager
 
     public function htmlToPdf($object)
     {
-        $pdfFilePath = "/tmp/".$user."-".uniqId().".pdf";
+        $pdfFilePath = "/tmp/".$this->pdfPrefix."-".uniqId().".pdf";
+
         $this->logger->info(sprintf('Creating %s', $pdfFilePath));
         
-        if (null === $this->templating) {
+        if (null === $this->template) {
             throw new \RuntimeException('Before to create a Pdf you need to set a template');
         }
 
@@ -87,6 +89,13 @@ class PdfManager
     public function setPdfPath($path)
     {
         $this->pdfFilePath = $path;
+
+        return $this;
+    }
+
+    public function setPdfPrefix($prefix)
+    {
+        $this->pdfPrefix = $prefix;
 
         return $this;
     }
