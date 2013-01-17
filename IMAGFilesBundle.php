@@ -1,6 +1,6 @@
 <?php
 
-namespace IMAG\CallsBundle;
+namespace IMAG\FilesBundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
