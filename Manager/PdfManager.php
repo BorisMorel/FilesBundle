@@ -53,18 +53,19 @@ class PdfManager
         $zendPdf = new \ZendPdf\PdfDocument($this->pdfFilePath, null, true);
 
         try {
-            $this->logger->info('Processing %s', basename($file));
-            $zendPdf->load($file);
+            $this->logger->info(sprintf('Processing %s', basename($file)));
+            $pdf = $zendPdf->load($file);
         } catch (\Exception $e) {
             $this->logger->warn("Pdf file can't be loaded by Zend");
             
             try {
                 $temp = $this->convertPdf($file);
                 $pdf = $zendPdf->load($temp);
+                unlink($temp);
             } catch (\Exception $e) {
                 $this->logger->err("Pdf can't be read");
                 
-                $pdf = $this->createErrorDocument($file);
+                $pdf = $this->createErrorDocument($file); 
             }
         }
 
@@ -145,23 +146,25 @@ class PdfManager
 
         try {
             $builder = new ProcessBuilder(array('pdf2ps', $file, $psFile));
-            $builder->getProcess()->run();
+            $process = $builder->getProcess();
+            $process->run();
 
-            if (!$builder->getProcess()->isSuccessful()
-                || $builder->getProcess()->getExitCode() != 0
+            if (!$process->isSuccessful()
+                || $process->getExitCode() != 0
                 || !file_exists($psFile)) {
                 $this->logger->warn('The conversion PDF to PS process has failed');
-                throw new \Exception(sprintf('The conversion PDF to PS process has failed: %s', $builder->getProcess()->getErrorOutput()));
+                throw new \Exception(sprintf('The conversion PDF to PS process has failed: %s', $process->getErrorOutput()));
             }
             
             $builder = new ProcessBuilder(array('ps2pdf', $psFile, $pdfTempFile));
-            $builder->getProcess()->run();
+            $process = $builder->getProcess();
+            $process->run();
 
-            if (!$builder->getProcess()->isSuccessful()
-                || $builder->getProcess()->getExitCode() != 0
+            if (!$process->isSuccessful()
+                || $process->getExitCode() != 0
                 || !file_exists($pdfTempFile)) {
                 $this->logger->warn('The conversion PS to PDF process has failed');
-                throw new \Exception(sprintf('The conversion PS to PDF process has failed: %s', $builder->getProcess()->getErrorOutput()));
+                throw new \Exception(sprintf('The conversion PS to PDF process has failed: %s', $process->getErrorOutput()));
             }
             
             unlink($psFile);
