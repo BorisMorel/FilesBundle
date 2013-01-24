@@ -44,42 +44,57 @@ class PdfManager
         return $pdfFilePath;
     }
     
-    public function appendFile($file)
+    public function appendFiles(array $files)
     {
         if (null === $this->pdfFilePath) {
             throw new \RuntimeException('You need to set a original pdf to append file into');
         }
 
+        $extractor = new \ZendPdf\Resource\Extractor();
         $zendPdf = new \ZendPdf\PdfDocument($this->pdfFilePath, null, true);
 
-        try {
-            $this->logger->info(sprintf('Processing %s', basename($file)));
-            $pdf = $zendPdf->load($file);
-        } catch (\Exception $e) {
-            $this->logger->warn("Pdf file can't be loaded by Zend");
-            
+        foreach($files as $file) {
             try {
-                $temp = $this->convertPdf($file);
-                $pdf = $zendPdf->load($temp);
-                unlink($temp);
-            } catch (\Exception $e) {
-                $this->logger->err("Pdf can't be read");
+                $this->logger->info(sprintf('Processing %s', $file));
+                $pdf = \ZendPdf\PdfDocument::load($file);
+
+            } catch (\ZendPdf\Exception\ExceptionInterface $e) {
+                $this->logger->warn("Pdf file can't be loaded by Zend");
                 
-                $pdf = $this->createErrorDocument($file); 
+                try {
+                    try {
+                        $temp = $this->convertPdf($file);
+                        $pdf = \ZendPdf\PdfDocument::load($temp);
+                        unlink($temp);
+
+                    } catch (\RuntimeException $e) {
+                        $this->logger->debug($e->getMessage());
+                        throw $e;
+
+                    } catch (\ZendPdf\Exception\ExceptionInterface $e) {
+                        $this->logger->debug($e->getMessage());
+                        throw $e;
+
+                    } 
+                } catch (\Exception $e) {
+                    $this->logger->err("Pdf can't be read. Adding to final pdf 1 page with the error");
+                    $pdf = $this->createErrorDocument($file); 
+                
+                }
+            }
+
+            foreach ($pdf->pages as $page) {
+                $zendPdf->pages[] = $extractor->clonePage($page);
             }
         }
 
-        foreach ($pdf->pages as $page) {
-            $zendPdf->pages[] = clone $page;
-        }
-
-        $zendPdf->save($this->pdfFilePath);
+        $zendPdf->save($this->pdfFilePath, true);
     }
 
     public function setTemplate($template) 
     {
         if (!$this->templating->exists($template)) {
-            throw new \InvalidArgumentException('Template %s not found', $template);
+            throw new \InvalidArgumentException(sprintf('Template %s not found', $template));
         }
 
         $this->template = $template;
@@ -132,6 +147,7 @@ class PdfManager
             ->setFillColor($white)
             ->setLineWidth(0)
             ->drawRectangle($rx1, $ry1, $rx2, $ry2)
+            ->flush()
             ;
 
         return $pdf;
@@ -139,8 +155,6 @@ class PdfManager
 
     private function convertPdf($file)
     {
-        $this->logger->info('Trying to convert pdf file');
-
         $psFile = sprintf("/tmp/temp-%s.ps", uniqId());
         $pdfTempFile = preg_replace("/([^\.]+)\.ps/", "$1.pdf", $psFile);
 
@@ -152,8 +166,8 @@ class PdfManager
             if (!$process->isSuccessful()
                 || $process->getExitCode() != 0
                 || !file_exists($psFile)) {
-                $this->logger->warn('The conversion PDF to PS process has failed');
-                throw new \Exception(sprintf('The conversion PDF to PS process has failed: %s', $process->getErrorOutput()));
+
+                throw new \RuntimeException(sprintf('The conversion PDF to PS process has failed: %s', $process->getErrorOutput()));
             }
             
             $builder = new ProcessBuilder(array('ps2pdf', $psFile, $pdfTempFile));
@@ -163,8 +177,8 @@ class PdfManager
             if (!$process->isSuccessful()
                 || $process->getExitCode() != 0
                 || !file_exists($pdfTempFile)) {
-                $this->logger->warn('The conversion PS to PDF process has failed');
-                throw new \Exception(sprintf('The conversion PS to PDF process has failed: %s', $process->getErrorOutput()));
+
+                throw new \RuntimeException(sprintf('The conversion PS to PDF process has failed: %s', $process->getErrorOutput()));
             }
             
             unlink($psFile);
@@ -172,7 +186,7 @@ class PdfManager
             return $pdfTempFile;
             
         } catch (\Exception $e) {
-            throw new \Exception($e->getMessage());
+            throw $e;
         }
     }
 
