@@ -50,14 +50,21 @@ class PdfManager
             throw new \RuntimeException('You need to set a original pdf to append file into');
         }
 
-        $extractor = new \ZendPdf\Resource\Extractor();
         $zendPdf = new \ZendPdf\PdfDocument($this->pdfFilePath, null, true);
 
         foreach($files as $file) {
             try {
                 $this->logger->info(sprintf('Processing %s', $file));
                 $pdf = \ZendPdf\PdfDocument::load($file);
+                try {
+                    $this->logger->info('Dereference pages');
+                    $pages = $this->dereferencePages($pdf);
 
+                } catch (\ZendPdf\Exception\RuntimeException $e) {
+                    $this->logger->err($e->getMessage());
+                    throw $e;
+
+                }
             } catch (\ZendPdf\Exception\ExceptionInterface $e) {
                 $this->logger->warn("Pdf file can't be loaded by Zend");
                 
@@ -81,11 +88,11 @@ class PdfManager
                     $pdf = $this->createErrorDocument($file); 
                 
                 }
+
+                $pages = $this->dereferencePages($pdf);
             }
 
-            foreach ($pdf->pages as $page) {
-                $zendPdf->pages[] = $extractor->clonePage($page);
-            }
+            $zendPdf->pages = array_merge($zendPdf->pages, $pages);
         }
 
         $zendPdf->save($this->pdfFilePath, true);
@@ -190,4 +197,16 @@ class PdfManager
         }
     }
 
+    private function dereferencePages($file)
+    {
+        $extractor = new \ZendPdf\Resource\Extractor();
+        
+        $res = array();
+
+        foreach ($file->pages as $page) {
+            $res[] = $extractor->clonePage($page);
+        }
+
+        return $res;
+    }
 }
