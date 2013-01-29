@@ -10,7 +10,7 @@ class PdfManager
         $templating,
         $snappy,
         $logger,
-        $template,
+        $template = array(),
         $pdfFilePath,
         $pdfPrefix = 'file'
         ;
@@ -34,8 +34,9 @@ class PdfManager
             throw new \RuntimeException('Before to create a Pdf you need to set a template');
         }
 
-        $html = $this->templating->render($this->template, array(
-            'data' => $object,
+        $html = $this->templating->render($this->template['template'], array_merge(
+            $this->template['params'],
+            array('data' => $object)
         ));
 
         $this->snappy->generateFromHtml($html, $pdfFilePath);
@@ -98,13 +99,16 @@ class PdfManager
         $zendPdf->save($this->pdfFilePath, true);
     }
 
-    public function setTemplate($template) 
+    public function setTemplate($template, array $params = array()) 
     {
         if (!$this->templating->exists($template)) {
             throw new \InvalidArgumentException(sprintf('Template %s not found', $template));
         }
 
-        $this->template = $template;
+        $this->template = array(
+            'template' => $template,
+            'params' => $params,
+        );
 
         return $this;
     }
