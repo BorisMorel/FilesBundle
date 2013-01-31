@@ -25,6 +25,11 @@
     "autoload": {
         "psr-0": { "IMAG\\FilesBundle": "" }
     },
-
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "http://packages.zendframework.com/"
+        }
+    ],
     "target-dir": "IMAG/FilesBundle"
 }
