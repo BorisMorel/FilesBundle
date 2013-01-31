@@ -15,7 +15,7 @@
         "php": ">=5.3.3",
         "symfony/symfony": ">2.0",
         "knplabs/knp-snappy-bundle": "dev-master",
-        "zendframework/zendpdf": "2.*",        
+        "zendframework/zendpdf": "2.*"
     },
     "source": {
         "url": "https://github.com/BorisMorel/FilesBundle.git",
