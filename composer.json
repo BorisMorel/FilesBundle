@@ -11,12 +11,6 @@
             "homepage" : "https://github.com/BorisMorel"
         }
     ],
-    "repositories": [
-        {
-            "type": "composer",
-            "url": "http://packages.zendframework.com/"
-        }
-    ],
     "require": {
         "php": ">=5.3.3",
         "symfony/symfony": ">2.0",
