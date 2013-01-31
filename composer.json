@@ -1,0 +1,36 @@
+{
+    "name": "imag/files-bundle",
+    "description": "Files Bundle for Symfony 2",
+    "homepage": "http://github.com/BorisMorel/FilesBundle",
+    "version": "1.0",
+    "authors": [
+        {
+            "name": "Boris Morel",
+            "email": "boris.morel@imag.fr",
+            "role": "Developer",
+            "homepage" : "https://github.com/BorisMorel"
+        },
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "http://packages.zendframework.com/"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3",
+        "symfony/symfony": ">2.0",
+        "knplabs/knp-snappy-bundle": "dev-master",
+        "zendframework/zendpdf": "2.*",        
+    },
+    "source": {
+        "url": "https://github.com/BorisMorel/FilesBundle.git",
+        "type": "git",
+        "reference": "origin/master"
+    },
+    "autoload": {
+        "psr-0": { "IMAG\\FilesBundle": "" }
+    },
+
+    "target-dir": "IMAG/FilesBundle"
+}
