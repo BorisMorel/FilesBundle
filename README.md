@@ -55,7 +55,7 @@ https://github.com/KnpLabs/KnpSnappyBundle
 <?php
 
 $pdf = $this->get('imag_files.pdf')
-    ->setTemplate("pdf.html.twig", array('include', $includeTemplate))
+    ->setTemplate("foo.html.twig", array('includeVar', $includeVar))
     ->setPdfPrefix(uniqId(mt_rand()))
     ->htmlToPdf($var)
     ;
@@ -82,5 +82,27 @@ $pdf = $this->get('imag_files.pdf')
 $zip = $this->get('imag_files.zip')
     ->add($pdf)
     ;
+
+```
+
+## Example
+
+### Twig template
+
+``` html
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'> 
+    {% include('NSFooBundle:Pdf/css:' ~ includeVar) %}
+  </head>
+
+  <body>
+    <h1>{{ data.title }}</h1>
+    <h2>{{ data.body }}</h2>
+  </body>
+</html>
+
 
 ```
