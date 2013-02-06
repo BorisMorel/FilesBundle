@@ -2,7 +2,7 @@
     "name": "imag/files-bundle",
     "description": "Files Bundle for Symfony 2",
     "homepage": "http://github.com/BorisMorel/FilesBundle",
-    "version": "1.0",
+    "license": "CeCILL",
     "authors": [
         {
             "name": "Boris Morel",
