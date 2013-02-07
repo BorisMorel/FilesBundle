@@ -7,7 +7,7 @@
         {
             "name": "Boris Morel",
             "email": "boris.morel@imag.fr",
-            "role": "Developer",
+            "role": "Maintainer",
             "homepage" : "https://github.com/BorisMorel"
         }
     ],
@@ -31,5 +31,6 @@
             "url": "http://packages.zendframework.com/"
         }
     ],
+    "minimum-stability": "dev",
     "target-dir": "IMAG/FilesBundle"
 }
