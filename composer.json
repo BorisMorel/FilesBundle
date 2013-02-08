@@ -16,8 +16,8 @@
         "symfony/symfony": ">2.0",
         "knplabs/knp-snappy-bundle": "dev-master",
         "zendframework/zendpdf": "2.*",
-        "zendframework/zend-stdlib": "2.*@dev",
-        "zendframework/zend-memory": "2.*@dev"
+        "zendframework/zend-stdlib": "dev-master",
+        "zendframework/zend-memory": "dev-master"
     },
     "source": {
         "url": "https://github.com/BorisMorel/FilesBundle.git",
