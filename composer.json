@@ -15,8 +15,6 @@
         "php": ">=5.3.3",
         "symfony/symfony": ">2.0",
         "knplabs/knp-snappy-bundle": "dev-master",
-        "zendframework/zend-memory": "2.1.0",
-        "zendframework/zend-stdlib": "2.1.0",
         "zendframework/zendpdf": "2.*"
     },
     "source": {
