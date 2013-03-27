@@ -17,13 +17,13 @@
       <argument type="service" id="knp_snappy.pdf" />
       <!-- Logger -->
       <argument type="service" id="logger" />
-      <tag name="monolog.logger" channel="files_pdf" />
+      <tag name="monolog.logger" channel="bomo_files" />
     </service>
 
     <service id="imag_files.zip" class="%imag_files.zip.class%">
       <!-- Logger -->
       <argument type="service" id="logger" />
-      <tag name="monolog.logger" channel="files_zip" />
+      <tag name="monolog.logger" channel="bomo_files" />
     </service>
   </services>
 </container>
