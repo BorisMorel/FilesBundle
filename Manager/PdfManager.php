@@ -122,6 +122,13 @@ class PdfManager
 
     public function setPdfPrefix($prefix)
     {
+        // See http://unicode.org/reports/tr15/#Norm_Forms
+        $prefix = preg_replace(
+            '/\p{M}/u',
+            '',
+            \Normalizer::normalize($prefix, \Normalizer::FORM_KD)
+        );
+
         $this->pdfPrefix = $prefix;
 
         return $this;
