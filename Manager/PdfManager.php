@@ -199,12 +199,13 @@ class PdfManager
                 throw new \RuntimeException(sprintf('The conversion PS to PDF process has failed: %s', $process->getErrorOutput()));
             }
             
-            unlink($psFile);
-
             return $pdfTempFile;
             
         } catch (\Exception $e) {
             throw $e;
+        } finally {
+            unlink($psFile);
+
         }
     }
 
