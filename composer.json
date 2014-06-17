@@ -13,7 +13,6 @@
     ],
     "require": {
         "php": ">=5.3.3",
-        "ext-pdftk": "*",
         "symfony/symfony": ">2.0",
         "knplabs/knp-snappy-bundle": "dev-master",
         "zendframework/zendpdf": "2.*"
