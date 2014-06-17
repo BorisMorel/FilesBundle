@@ -11,7 +11,6 @@ class PdfManager
         $snappy,
         $logger,
         $template = array(),
-        $pdfFilePath,
         $pdfPrefix = 'file'
         ;
 
@@ -41,62 +40,60 @@ class PdfManager
 
         $this->snappy->generateFromHtml($html, $pdfFilePath);
         
-        $this->pdfFilePath = $pdfFilePath;
+        $this->logger->info('Pdf from html created');
+
         return $pdfFilePath;
     }
     
-    public function appendFiles(array $files)
+    public function appendFiles($pdfPath, array $files)
     {
-        if (null === $this->pdfFilePath) {
-            throw new \RuntimeException('You need to set a original pdf to append file into');
+        if (true === file_exists($pdfPath) && 0 != filesize($pdfPath)) {
+            $tempPath = "/tmp/temp-".uniqId().".pdf";
+            $this->logger->info(sprintf('Rename %s -> %s', $pdfPath, $tempPath));
+            rename($pdfPath, $tempPath);
+            
+            array_unshift($files, $tempPath);
         }
 
-        $zendPdf = new \ZendPdf\PdfDocument($this->pdfFilePath, null, true);
+        try {
+            $builder = new ProcessBuilder();
+            $builder
+                ->setPrefix('pdftk')
+                ;
 
-        foreach($files as $file) {
-            try {
-                $this->logger->info(sprintf('Processing %s', $file));
-                $pdf = \ZendPdf\PdfDocument::load($file);
-                try {
-                    $this->logger->info('Dereference pages');
-                    $pages = $this->dereferencePages($pdf);
-
-                } catch (\ZendPdf\Exception\RuntimeException $e) {
-                    $this->logger->err($e->getMessage());
-                    throw $e;
-
-                }
-            } catch (\ZendPdf\Exception\ExceptionInterface $e) {
-                $this->logger->warn("Pdf file can't be loaded by Zend");
-                
-                try {
-                    try {
-                        $temp = $this->convertPdf($file);
-                        $pdf = \ZendPdf\PdfDocument::load($temp);
-                        unlink($temp);
-
-                    } catch (\RuntimeException $e) {
-                        $this->logger->debug($e->getMessage());
-                        throw $e;
-
-                    } catch (\ZendPdf\Exception\ExceptionInterface $e) {
-                        $this->logger->debug($e->getMessage());
-                        throw $e;
-
-                    } 
-                } catch (\Exception $e) {
-                    $this->logger->err("Pdf can't be read. Adding to final pdf 1 page with the error");
-                    $pdf = $this->createErrorDocument($file); 
-                
-                }
-
-                $pages = $this->dereferencePages($pdf);
+            foreach ($files as $file) {
+                $builder->add($file);
             }
 
-            $zendPdf->pages = array_merge($zendPdf->pages, $pages);
-        }
+            $builder
+                ->add('output')
+                ->add($pdfPath)
+                ;
 
-        $zendPdf->save($this->pdfFilePath, true);
+            $process = $builder->getProcess();
+            $process->run();
+            
+            $this->logger->info(sprintf('Start Pdftk process'));
+            
+            if (!$process->isSuccessful()
+                || $process->getExitCode() != 0
+            ) {
+                
+                throw new \RuntimeException(sprintf('command line failed [%s] : %s', $process->getCommandLine(), $process->getErrorOutput()));
+            }
+        }  catch (\Exception $e) {
+            $this->logger->err("Pdftk Failed. Now error process");
+            $this->logger->debug($e->getMessage());
+            $errorPdf = $this->createErrorDocument($file);
+            $files = $this->replaceErrorFile($files, $file, $errorPdf);
+
+            $this->appendFiles($pdfPath, $files);
+        }
+        
+        isset($tempPath) ? unlink($tempPath) : '';
+        isset($errorPdf) ? unlink($errorPdf) : '';
+
+        return $pdfPath;
     }
 
     public function setTemplate($template, array $params = array()) 
@@ -109,13 +106,6 @@ class PdfManager
             'template' => $template,
             'params' => $params,
         );
-
-        return $this;
-    }
-
-    public function setPdfPath($path)
-    {
-        $this->pdfFilePath = $path;
 
         return $this;
     }
@@ -136,6 +126,9 @@ class PdfManager
 
     private function createErrorDocument($file)
     {
+        $fileName = "/tmp/error-".basename($file);
+        $this->logger->err('.......... Create a special error pdf');
+
         $pdf = new \ZendPdf\PdfDocument();
         $pdf->pages[] = ($page1 = $pdf->newPage('A4'));
 
@@ -168,57 +161,29 @@ class PdfManager
             ->flush()
             ;
 
-        return $pdf;
+        $fileName = "/tmp/error-".basename($file);
+        $pdf->save($fileName);
+
+        $this->logger->err(sprintf('.......... Pdf saved: %s', $fileName));
+
+        return $fileName;
     }
 
-    private function convertPdf($file)
+    public function replaceErrorFile($files, $errorFile, $replacementFile)
     {
-        $psFile = sprintf("/tmp/temp-%s.ps", uniqId());
-        $pdfTempFile = preg_replace("/([^\.]+)\.ps/", "$1.pdf", $psFile);
+        $this->logger->err('.......... Trying to replace error file with special pdf');
 
-        try {
-            $builder = new ProcessBuilder(array('pdf2ps', $file, $psFile));
-            $process = $builder->getProcess();
-            $process->run();
-
-            if (!$process->isSuccessful()
-                || $process->getExitCode() != 0
-                || !file_exists($psFile)) {
-
-                throw new \RuntimeException(sprintf('The conversion PDF to PS process has failed: %s', $process->getErrorOutput()));
-            }
-            
-            $builder = new ProcessBuilder(array('ps2pdf', $psFile, $pdfTempFile));
-            $process = $builder->getProcess();
-            $process->run();
-
-            if (!$process->isSuccessful()
-                || $process->getExitCode() != 0
-                || !file_exists($pdfTempFile)) {
-
-                throw new \RuntimeException(sprintf('The conversion PS to PDF process has failed: %s', $process->getErrorOutput()));
-            }
-            
-            unlink($psFile);
-            return $pdfTempFile;
-            
-        } catch (\Exception $e) {
-            unlink($psFile);
-            throw $e;
-
-        }
-    }
-
-    private function dereferencePages($file)
-    {
-        $extractor = new \ZendPdf\Resource\Extractor();
+        $key = array_search($errorFile, $files, true);
         
-        $res = array();
-
-        foreach ($file->pages as $page) {
-            $res[] = $extractor->clonePage($page);
+        if (false === $key) {
+            throw new \RuntimeException(sprintf('.......... Pdf file for replacement not found: %s', $errorFile));
         }
+        
+        $files[$key] = $replacementFile;
 
-        return $res;
+        $this->logger->err(sprintf('.......... %s replaced by %s', $errorFile, $replacementFile));
+
+        return $files;
     }
+
 }
