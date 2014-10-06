@@ -62,6 +62,11 @@ class PdfManager
                 ;
 
             foreach ($files as $file) {
+
+                if (false === file_exists($file)) {
+                    throw new \InvalidArgumentException(sprintf('File not exists : %s', $file));
+                }
+
                 $builder->add($file);
             }
 
@@ -81,13 +86,17 @@ class PdfManager
                 
                 throw new \RuntimeException(sprintf('command line failed [%s] : %s', $process->getCommandLine(), $process->getErrorOutput()));
             }
-        }  catch (\Exception $e) {
-            $this->logger->err("Pdftk Failed. Now error process");
-            $this->logger->debug($e->getMessage());
+        }  catch (\InvalidArgumentException $e) {
+            $this->logger->err($e->getMessage());
             $errorPdf = $this->createErrorDocument($file);
             $files = $this->replaceErrorFile($files, $file, $errorPdf);
 
             $this->appendFiles($pdfPath, $files);
+        } catch (\RuntimeException $e) {
+            $this->logger->err("Pdftk Failed. Now error process");
+            $this->logger->debug($e->getMessage());
+
+            throw $e;
         }
         
         isset($tempPath) ? unlink($tempPath) : '';
@@ -160,7 +169,6 @@ class PdfManager
 
     private function createErrorDocument($file)
     {
-        $fileName = "/tmp/error-".basename($file);
         $this->logger->err('.......... Create a special error pdf');
 
         $pdf = new \ZendPdf\PdfDocument();
