@@ -96,6 +96,40 @@ class PdfManager
         return $pdfPath;
     }
 
+    public function addWaterMark($pdfPath, $pdfMark)
+    {
+        if (false === file_exists($pdfPath) || false === file_exists($pdfMark)) {
+            throw new \RuntimeException(sprintf('To add a watermark, the files need to be exists: %s : %s', $pdfPath, $pdfMark));
+        }
+
+        $tempPath = "/tmp/temp-".uniqId().".pdf";
+        $this->logger->info(sprintf('Rename %s -> %s', $pdfPath, $tempPath));
+        rename($pdfPath, $tempPath);
+
+        try {
+            $builder = new ProcessBuilder();
+            $builder
+                ->setPrefix('pdftk')
+                ->add($tempPath)
+                ->add('background')
+                ->add($pdfMark)
+                ->add('output')
+                ->add($pdfPath)
+                ;
+
+            $process = $builder->getProcess();
+            $process->run();
+        } catch (\Exception $e) {
+            $this->logger->err("Pdftk watermark Failed.");
+            $this->logger->debug($e->getMessage());
+            rename($tempPath, $pdfPath);
+        }
+
+        unlink($tempPath);
+
+        return $pdfPath;
+    }
+
     public function setTemplate($template, array $params = array()) 
     {
         if (!$this->templating->exists($template)) {
