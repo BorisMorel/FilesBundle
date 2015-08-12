@@ -1,6 +1,6 @@
 # FilesBundle
 
-This bundle can create/manage PDFs files. it can create a Pdf from a html page and append many Pdfs files on the document and zip final document. 
+This bundle can create/manage PDFs files. it can create a Pdf from a html page and append many Pdfs files on the document and zip final document.
 It use KnpSnappyBundle to create PDF from Html and ZendPdf to append pdfs files.
 
 
@@ -11,6 +11,9 @@ It use KnpSnappyBundle to create PDF from Html and ZendPdf to append pdfs files.
 3. Configure the KnpSnappyBundle
 
 ### How get the bundle
+
+** Caution: **
+> The dev-master version have not backward compatibility with the 2.x version.
 
 ### Composer
 Modify your composer.json on your project root
@@ -56,8 +59,10 @@ https://github.com/KnpLabs/KnpSnappyBundle
 
 $pdf = $this->get('imag_files.pdf')
     ->setTemplate("foo.html.twig", array('includeVar', $includeVar))
-    ->setPdfPrefix(uniqId(mt_rand()))
-    ->htmlToPdf($var)
+    ->setPdfPrefix('foo-file') // Like : 'foo-file-uniqId().pdf'
+    ->setPath('/home/foo/tmp') // Default sys_get_temp_dir()
+    ->addParameter('name', $value)
+    ->htmlToPdf()
     ;
 
 ```
@@ -94,7 +99,7 @@ $zip = $this->get('imag_files.zip')
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset='utf-8'> 
+    <meta charset='utf-8'>
     {% include('NSFooBundle:Pdf/css:' ~ includeVar) %}
   </head>
 
