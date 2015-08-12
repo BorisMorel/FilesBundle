@@ -12,7 +12,7 @@ It use KnpSnappyBundle to create PDF from Html and ZendPdf to append pdfs files.
 
 ### How get the bundle
 
-** Caution: **
+**Caution:**
 > The dev-master version have not backward compatibility with the 2.x version.
 
 ### Composer
