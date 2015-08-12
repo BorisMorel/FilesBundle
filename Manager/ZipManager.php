@@ -2,39 +2,28 @@
 
 namespace IMAG\FilesBundle\Manager;
 
-class ZipManager
+class ZipManager extends AbstractManager
 {
     private
-        $logger,
-        $zipPrefix = 'file',
         $fileDirPrefix = 'file',
         $_archive = null
         ;
 
-    public function __construct(\Symfony\Bridge\Monolog\Logger $logger)
-    {
-        $this->logger = $logger;
-    }
-
     public function init()
     {
         $this->_archive = new \ZipArchive();
-        $zipPath = '/tmp/'.$this->zipPrefix.'-'.uniqId().'.zip';
-        $this->_archive->open($zipPath, \ZIPARCHIVE::CREATE);
-        
+        $file =
+            $this->path
+            .'/'
+            .$this->prefix
+            ."-"
+            .uniqId(mt_rand())
+            .".zip"
+            ;
+
+        $this->_archive->open($file, \ZIPARCHIVE::CREATE);
+
         return $this;
-    }
-
-    public function setZipPrefix($prefix)
-    {
-        $this->zipPrefix = $prefix;
-
-        return $this;
-    }
-
-    public function getZipPrefix()
-    {
-        return $this->zipPrefix;
     }
 
     public function addFileDirectoryPrefix($dirname)
@@ -50,7 +39,7 @@ class ZipManager
 
         $this->logger->info(sprintf('Adding file %s to zip archive', $path));
 
-        
+
         $this->_archive->addFile($path, $this->fileDirPrefix.'/'.basename($path));
 
         return $this;

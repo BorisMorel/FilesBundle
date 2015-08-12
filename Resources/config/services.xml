@@ -10,19 +10,19 @@
   </parameters>
 
   <services>
-    
+    <service id="imag_files.manager.abstract" abstract="true" public="false">
+      <argument type="service" id="logger" />
+    </service>
+
     <!-- Pdf manager -->
-    <service id="imag_files.pdf" class="%imag_files.pdf.class%">
+    <service id="imag_files.pdf" class="%imag_files.pdf.class%" parent="imag_files.manager.abstract">
       <argument type="service" id="templating" />
       <argument type="service" id="knp_snappy.pdf" />
-      <!-- Logger -->
-      <argument type="service" id="logger" />
       <tag name="monolog.logger" channel="bomo_files" />
     </service>
 
-    <service id="imag_files.zip" class="%imag_files.zip.class%">
-      <!-- Logger -->
-      <argument type="service" id="logger" />
+    <!-- Zip manager -->
+    <service id="imag_files.zip" class="%imag_files.zip.class%" parent="imag_files.manager.abstract">
       <tag name="monolog.logger" channel="bomo_files" />
     </service>
   </services>

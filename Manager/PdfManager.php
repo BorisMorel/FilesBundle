@@ -4,54 +4,58 @@ namespace IMAG\FilesBundle\Manager;
 
 use Symfony\Component\Process\ProcessBuilder;
 
-class PdfManager
+class PdfManager extends AbstractManager
 {
     private
         $templating,
         $snappy,
-        $logger,
-        $template = array(),
-        $pdfPrefix = 'file'
+        $template,
+        $parameters = array()
         ;
 
-    public function __construct(\Symfony\Bundle\TwigBundle\TwigEngine $templating,
-                                \Knp\Snappy\GeneratorInterface $snappy,
-                                \Symfony\Bridge\Monolog\Logger $logger)
+    public function __construct(\Symfony\Bridge\Monolog\Logger $logger,
+                                \Symfony\Bundle\TwigBundle\TwigEngine $templating,
+                                \Knp\Snappy\GeneratorInterface $snappy)
     {
+        parent::__construct($logger);
         $this->templating = $templating;
         $this->snappy = $snappy;
-        $this->logger = $logger;
     }
 
-    public function htmlToPdf($object)
+    public function htmlToPdf()
     {
-        $pdfFilePath = "/tmp/".$this->pdfPrefix."-".uniqId().".pdf";
+        $file =
+            $this->path
+            .'/'
+            .$this->prefix
+            ."-"
+            .uniqId(mt_rand())
+            .".pdf"
+            ;
 
-        $this->logger->info(sprintf('Creating %s', $pdfFilePath));
-        
+        $this->logger->info(sprintf('Creating %s', $file));
+
         if (null === $this->template) {
             throw new \RuntimeException('Before to create a Pdf you need to set a template');
         }
 
-        $html = $this->templating->render($this->template['template'], array_merge(
-            $this->template['params'],
-            array('data' => $object)
-        ));
+        $html = $this->templating->render($this->template, $this->parameters);
 
-        $this->snappy->generateFromHtml($html, $pdfFilePath);
-        
+        $this->snappy->generateFromHtml($html, $file);
+
         $this->logger->info('Pdf from html created');
 
-        return $pdfFilePath;
+        return $file;
     }
-    
+
+
     public function appendFiles($pdfPath, array $files)
     {
         if (true === file_exists($pdfPath) && 0 != filesize($pdfPath)) {
-            $tempPath = "/tmp/temp-".uniqId().".pdf";
+            $tempPath = sys_get_temp_dir()."/temp-".uniqId().".pdf";
             $this->logger->info(sprintf('Rename %s -> %s', $pdfPath, $tempPath));
             rename($pdfPath, $tempPath);
-            
+
             array_unshift($files, $tempPath);
         }
 
@@ -77,13 +81,13 @@ class PdfManager
 
             $process = $builder->getProcess();
             $process->run();
-            
+
             $this->logger->info(sprintf('Start Pdftk process'));
-            
+
             if (!$process->isSuccessful()
                 || $process->getExitCode() != 0
             ) {
-                
+
                 throw new \RuntimeException(sprintf('command line failed [%s] : %s', $process->getCommandLine(), $process->getErrorOutput()));
             }
         }  catch (\InvalidArgumentException $e) {
@@ -98,7 +102,7 @@ class PdfManager
 
             throw $e;
         }
-        
+
         isset($tempPath) ? unlink($tempPath) : '';
         isset($errorPdf) ? unlink($errorPdf) : '';
 
@@ -111,7 +115,7 @@ class PdfManager
             throw new \RuntimeException(sprintf('To add a watermark, the files need to be exists: %s : %s', $pdfPath, $pdfMark));
         }
 
-        $tempPath = "/tmp/temp-".uniqId().".pdf";
+        $tempPath = sys_get_temp_dir()."/temp-".uniqId().".pdf";
         $this->logger->info(sprintf('Rename %s -> %s', $pdfPath, $tempPath));
         rename($pdfPath, $tempPath);
 
@@ -139,32 +143,34 @@ class PdfManager
         return $pdfPath;
     }
 
-    public function setTemplate($template, array $params = array()) 
+    public function setTemplate($template)
     {
         if (!$this->templating->exists($template)) {
             throw new \InvalidArgumentException(sprintf('Template %s not found', $template));
         }
 
-        $this->template = array(
-            'template' => $template,
-            'params' => $params,
-        );
+        $this->template = $template;
 
         return $this;
     }
 
-    public function setPdfPrefix($prefix)
+    public function addParameter($name, $param)
     {
-        // See http://unicode.org/reports/tr15/#Norm_Forms
-        $prefix = preg_replace(
-            '/\p{M}/u',
-            '',
-            \Normalizer::normalize($prefix, \Normalizer::FORM_KD)
-        );
-
-        $this->pdfPrefix = $prefix;
+        $this->parameters[$name] = $param;
 
         return $this;
+    }
+
+    public function setParameters(array $array)
+    {
+        $this->parameters = $array;
+
+        return $this;
+    }
+
+    public function getParameters()
+    {
+        return $this->parameters;
     }
 
     private function createErrorDocument($file)
@@ -177,14 +183,14 @@ class PdfManager
         $text = sprintf("Pdf file corrupted : %s", basename($file));
 
         $font = \ZendPdf\Font::fontWithName('Helvetica-Bold');
-        
+
         $red =  \ZendPdf\Color\Html::color('#FF0000');
         $white = \ZendPdf\Color\Html::color('#FFFFFF');
-        
+
 
         $height = $page1->getHeight();
         $width = $page1->getWidth();
-                
+
         $rx1 = ($width/2) - 100;
         $rx2 = ($width/2) + 100;
         $ry1 = ($height/2) - 20;
@@ -192,7 +198,7 @@ class PdfManager
 
         $page1
             ->setFont($font, 20)
-            ->drawText($text, 10, ($height-$height/8))      
+            ->drawText($text, 10, ($height-$height/8))
             ->setFillColor($red)
             ->setLineColor($white)
             ->setLineWidth(10)
@@ -216,11 +222,11 @@ class PdfManager
         $this->logger->err('.......... Trying to replace error file with special pdf');
 
         $key = array_search($errorFile, $files, true);
-        
+
         if (false === $key) {
             throw new \RuntimeException(sprintf('.......... Pdf file for replacement not found: %s', $errorFile));
         }
-        
+
         $files[$key] = $replacementFile;
 
         $this->logger->err(sprintf('.......... %s replaced by %s', $errorFile, $replacementFile));
