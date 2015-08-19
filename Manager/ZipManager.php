@@ -49,6 +49,7 @@ class ZipManager extends AbstractManager
     {
         $filename = $this->_archive->filename;
         $this->_archive->close();
+        $this->_archive = null;
 
         return $filename;
     }
