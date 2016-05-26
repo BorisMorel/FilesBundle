@@ -10,7 +10,8 @@ class PdfManager extends AbstractManager
         $templating,
         $snappy,
         $template,
-        $parameters = array()
+        $parameters = array(),
+        $options = array()
         ;
 
     public function __construct(\Symfony\Bridge\Monolog\Logger $logger,
@@ -41,7 +42,7 @@ class PdfManager extends AbstractManager
 
         $html = $this->templating->render($this->template, $this->parameters);
 
-        $this->snappy->generateFromHtml($html, $file);
+        $this->snappy->generateFromHtml($html, $file, $this->options);
 
         $this->logger->info('Pdf from html created');
 
@@ -171,6 +172,25 @@ class PdfManager extends AbstractManager
     public function getParameters()
     {
         return $this->parameters;
+    }
+
+    public function addOption($name, $option)
+    {
+        $this->options[$name] = $param;
+
+        return $this;
+    }
+
+    public function setOptions(array $array)
+    {
+        $this->options = $array;
+
+        return $this;
+    }
+
+    public function getOptions()
+    {
+        return $this->options;
     }
 
     private function createErrorDocument($file)
